@@ -1,0 +1,20 @@
+version: '2.1'
+services:
+  db:
+    container_name: ${DB_NAME}
+    image: mysql:5.7
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+    healthcheck:
+      test:  mysql --user=root --password=${DB_PASSWORD} -e "show databases;"
+      interval: 3s
+      timeout: 1s
+      retries: 5
+    volumes:
+      - ./.db/data:/var/lib/mysql:rw
+      - ./.db/config:/etc/mysql:ro
+    restart: always
+    command: ['--character-set-server=utf8', '--collation-server=utf8_unicode_ci', '--lower_case_table_names=1']
