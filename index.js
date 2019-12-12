@@ -18,9 +18,12 @@ db.sequelize.sync();
 passportConfig();
 
 app.use(morgan('dev'));
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(expressSession({
   resave: false,
@@ -30,6 +33,7 @@ app.use(expressSession({
     httpOnly: true,
     secure: false, // https를 쓸 때 true
   },
+  name: 'rnbck',
 }));
 app.use(passport.initialize());
 app.use(passport.session());

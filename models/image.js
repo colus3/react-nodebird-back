@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
     collate: 'utf8_general_ci',
   });
   Image.associate = (db) => {
-    db.Image.belongsTo(db.Post);
+    db.Image.belongsTo(db.Post, { foreignKey: 'postId' });
   };
   return Image;
 };
