@@ -1,9 +1,26 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const db = require('../models');
+const { isLoggedIn } = require('./middleware');
 
 const router = express.Router();
 
-router.post('/', async (req, res, next) => {
+const upload = multer({
+  storage: multer.diskStorage({
+    destination(req, file, done) {
+      done(null, 'uploads');
+    },
+    filename(req, file, done) {
+      const ext = path.extname(file.originalname);
+      const basename = path.basename(file.originalname, ext);
+      done(null, basename + new Date().valueOf() + ext);
+    },
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+router.post('/', isLoggedIn, upload.none(), async (req, res, next) => {
   try {
     const hashtags = req.body.content.match(/#[^\s]+/g);
     const newPost = await db.Post.create({
@@ -17,6 +34,17 @@ router.post('/', async (req, res, next) => {
       console.log(result);
       await newPost.addHashtags(result.map(r => r[0]));
     }
+    if (req.body.image) { // 이미지 주소를 여러개 올리면 image: [주소1, 주소2]
+      if (Array.isArray(req.body.image)) {
+        const images = await Promise.all(req.body.image.map((image) => {
+          return db.Image.create({ src: image });
+        }));
+        await newPost.addImages(images);
+      } else { // 이미지를 하나만 올리면 image: 주소
+        const image = await db.Image.create({ src: req.body.image });
+        await newPost.addImage(image);
+      }
+    }
     // const User = await newPost.getUser();
     // newPost.User = User;
     // res.json(newPost);
@@ -26,6 +54,8 @@ router.post('/', async (req, res, next) => {
         model: db.User,
         as: 'User',
         attributes: ['id', 'nickname'],
+      }, {
+        model: db.Image,
       }],
     });
     res.json(fullPost);
@@ -35,8 +65,8 @@ router.post('/', async (req, res, next) => {
   }
 
 });
-router.post('/images', (req, res) => {
-
+router.post('/images', upload.array('image'), (req, res) => {
+  res.json(req.files.map((v) => v.filename));
 });
 
 router.get('/:id/comments', async (req, res, next) => {
@@ -62,11 +92,8 @@ router.get('/:id/comments', async (req, res, next) => {
   }
 });
 
-router.post('/:id/comment', async (req, res, next) => {
+router.post('/:id/comment', isLoggedIn, async (req, res, next) => {
   try {
-    if (!req.user) {
-      return res.status(401).send('로그인이 필요합니다.');
-    }
     const post = await db.Post.findOne({ where : { id: req.params.id } });
     if (!post) {
       return res.status(404).send('포스트가 존재하지 않습니다.');
