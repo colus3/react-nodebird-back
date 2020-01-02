@@ -47,5 +47,5 @@ app.use('/api/posts', postsrAPIRouter);
 app.use('/api/hashtag', hashtagAPIRouter);
 
 app.listen(process.env.NODE_ENV === 'production' ? process.env.PORT : 3065, () => {
-  console.log(`server is running on http://localhost:${process.env.NODE_ENV === 'production' ? process.env.PORT : 3065}`);
+  console.log(`server is running on http://localhost:${process.env.NODE_ENV === 'production' ? process.env.PORT : 3065} (${process.env.NODE_ENV})`);
 });
